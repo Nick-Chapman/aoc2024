@@ -1,6 +1,6 @@
 module Day6 (main) where
 
-import Data.Set (Set)
+import Data.Set (Set,member,notMember)
 import Misc (check,the,nub)
 import qualified Data.Set as Set
 
@@ -14,8 +14,8 @@ main = do
   part2_sam <- part2 sam
   print ("day6, part2 (sample)", check 6 $ part2_sam)
 
-  --part2_inp <- part2 inp -- (approx 6 mins)
-  --print ("day6, part2", check 1831 $ part2_inp)
+  part2_inp <- part2 inp -- (approx 6 mins)
+  print ("day6, part2", check 1831 $ part2_inp)
 
 type Pos = (Int,Int)
 data Dir = N | E | S | W deriving (Eq,Ord,Show)
@@ -69,7 +69,7 @@ makesLoopy i = isLoopy Set.empty (path i)
     isLoopy visited = \case
       [] -> False
       pd:path -> do
-        if pd `elem` visited then True else
+        if pd `member` visited then True else
           isLoopy (Set.insert pd visited) path
 
 addObstacle :: Input -> Pos -> Input
@@ -85,5 +85,5 @@ path ((maxX,maxY),blocks,person) = loop person
     loop pd@(pos,dir) =
       if offGrid pos then [] else do
         let pos1 = frontOfMe pos dir
-        let pd' = if pos1 `notElem` blocks then (pos1,dir) else (pos,turn90 dir)
+        let pd' = if pos1 `notMember` blocks then (pos1,dir) else (pos,turn90 dir)
         pd : loop pd'
