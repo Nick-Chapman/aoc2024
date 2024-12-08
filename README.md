@@ -9,3 +9,4 @@
 [day5](src/Day5.hs)
 [day6](src/Day6.hs)
 [day7](src/Day7.hs)
+[day8](src/Day8.hs)
