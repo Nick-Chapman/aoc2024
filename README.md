@@ -11,3 +11,4 @@
 [day7](src/Day7.hs)
 [day8](src/Day8.hs)
 [day9](src/Day9.hs)
+[day10](src/Day10.hs)
