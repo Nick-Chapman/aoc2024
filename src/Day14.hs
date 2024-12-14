@@ -1,6 +1,8 @@
 module Day14 (main) where
 
-import Misc (check)
+import Control.Monad (forM_)
+import Data.Map as Map
+import Misc (check,hist)
 import Par4 (parse,Par,separated,nl,lit,key,int,alts)
 
 main :: IO ()
@@ -11,6 +13,29 @@ main = do
   let boundInp = (101,103)
   print ("day14, part1 (sample)", check 12 $ part1 boundSam sam)
   print ("day14, part1", check 221616000 $ part1 boundInp inp)
+  let _ = searchPart2 10000 boundInp inp
+  part2 7572 boundInp inp
+
+searchPart2 :: Int -> Pos -> Input -> IO ()
+searchPart2 max bound rs = do
+  forM_ [0..max] $ \nSteps -> do
+    print nSteps
+    putStrLn (pic bound [ locate bound nSteps r | r <- rs ])
+
+part2 :: Int -> Pos -> Input -> IO ()
+part2 nSteps bound rs =
+  putStrLn (pic bound [ locate bound nSteps r | r <- rs ])
+
+pic :: Pos -> [Pos] -> String
+pic (xB,yB) ps = do
+  let h = hist ps
+  let
+    cell x y =
+      case Map.lookup (x,y) h of
+        Nothing -> "."
+        Just n -> show n
+  unlines [ concat [ cell x y | x <- [0..xB-1] ] | y <- [0..yB-1] ]
+
 
 type Pos = (Int,Int)
 type Robot = (Pos,Pos)
