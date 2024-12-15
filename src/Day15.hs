@@ -68,39 +68,26 @@ type State = (Pos,World)
 
 step :: Dir -> State -> State
 step d (p,w) = do
-  let n = shiftLength p w d
-  if n == 0 then (p,w) else do
-    let w1 = shunt n p w d
-    let w2 = Map.insert p Gap w1
-    let p' = adj p d
-    (p',w2)
+  case shunt w p d of
+    Nothing -> (p,w)
+    Just w -> (adj p d, Map.insert p Gap w)
 
-shunt :: Int -> Pos -> World -> Dir -> World
-shunt n p w d =
-  if n == 0 then w else
-    move1 p d (shunt (n-1) (adj p d) w d)
+shunt :: World -> Pos -> Dir -> Maybe World
+shunt w p d = do
+  case clear w (adj p d) d of
+    Nothing -> Nothing
+    Just w -> Just $ Map.insert (adj p d) (look w p) w
 
-move1 :: Pos -> Dir -> World -> World
-move1 p d w = do
-  let t = maybe undefined id $ Map.lookup p w
-  let p' = adj p d
-  Map.insert p' t w
+clear :: World -> Pos -> Dir -> Maybe World
+clear w p d =
+  case look w p of
+    Robot -> undefined
+    Wall -> Nothing
+    Gap -> Just w
+    Box -> shunt w p d
 
-shiftLength :: Pos -> World -> Dir -> Int
-shiftLength p w d = do
-  let col = infColumn w d p
-  let isMovable = \case Box -> True; Robot -> True; Wall -> False; Gap -> False
-  let (h,t) = span isMovable col
-  let canMove = case (head t) of Box -> undefined; Robot -> undefined; Wall -> False; Gap -> True
-  let n = if canMove then length h else 0
-  n
-
-infColumn :: World -> Dir -> Pos -> [Tile]
-infColumn w d p = [ look p | p <- adjs d p ]
-  where look p = maybe undefined id $ Map.lookup p w
-
-adjs :: Dir -> Pos -> [Pos]
-adjs d p = p : adjs d (adj p d)
+look :: World -> Pos -> Tile
+look w p = maybe undefined id $ Map.lookup p w
 
 adj :: Pos -> Dir -> Pos
 adj (x,y) = \case
