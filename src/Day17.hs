@@ -4,7 +4,7 @@ import Misc (check)
 import Par4 (parse,Par,key,int,separated,nl,lit)
 import Control.Monad (ap,liftM)
 import Data.Bits (xor)
-import Control.Monad (forM_)
+import qualified Day17_part2
 
 main :: IO ()
 main = do
@@ -12,12 +12,9 @@ main = do
   inp <- parse gram <$> readFile "input/day17.input"
   print ("day17, part1 (sample)", check [4,6,3,5,6,3,5,2,1,0] $ part1 sam)
   print ("day17, part1", check [2,1,0,4,6,2,4,2,0] $ part1 inp)
-
   sam2 <- parse gram <$> readFile "input/day17.sample2"
   print ("day17, part2 (sample2)", check 117440 $ part2 sam2)
-
-  -- print ("day17, part2", check 0 $ part2 inp) -- dream on!
-  search inp
+  Day17_part2.main
 
 type Input = (State,Prog)
 
@@ -35,15 +32,6 @@ part1 (s,p) = execute p s emulate
 
 part2 :: Input -> Int
 part2 (s,prog) = head [ a | a <- [0..], execute prog s { a } emulate == prog ]
-
-search :: Input -> IO ()
-search (s,prog) = do
-  print prog
-  let start = 2000000000 -- checked up to 2 billion
-  forM_ [start..] $ \a -> do
-    if a `mod` 100000 == 0 then print a else pure ()
-    let out = execute prog s { a } emulate
-    if (out == prog) then do print ("YES",a); undefined else do pure ()
 
 emulate :: M ()
 emulate = do
