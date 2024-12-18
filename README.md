@@ -18,4 +18,5 @@
 [day14](src/Day14.hs)
 [day15](src/Day15.hs)
 [day16](src/Day16.hs)
-[day17](src/Day17.hs)
+[day17](src/Day17.hs) [day17(part2)](src/Day17_part2.hs)
+[day18](src/Day18.hs)
