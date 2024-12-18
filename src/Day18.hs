@@ -29,7 +29,7 @@ part1 n goal xs =
 
 part2 :: Pos -> Input -> Pos
 part2 goal xs = do
-  head [ xs!!(n-1) | n <- [0..length xs], Nothing <- [ search n goal xs ] ]
+  head [ xs!!n | n <- reverse [0..length xs], Just{} <- [ search n goal xs ] ]
 
 search :: Int -> Pos -> Input -> Maybe Int
 search n goal xs = do
