@@ -28,8 +28,14 @@ part1 n goal xs =
     Nothing -> undefined
 
 part2 :: Pos -> Input -> Pos
-part2 goal xs = do
-  head [ xs!!n | n <- reverse [0..length xs], Just{} <- [ search n goal xs ] ]
+part2 goal xs = xs !! binSearch 0 (length xs+1)
+  where
+    test n = case search n goal xs of Just{} -> False; Nothing -> True
+    binSearch :: Int -> Int -> Int
+    binSearch lo hi = do
+      if lo+1 == hi then lo else do
+        let n = (lo+hi) `div` 2
+        if test n then binSearch lo n else binSearch n hi
 
 search :: Int -> Pos -> Input -> Maybe Int
 search n goal xs = do
