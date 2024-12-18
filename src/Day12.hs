@@ -4,7 +4,7 @@ import Misc (check)
 import Par4 (parse,Par,separated,nl,many,dot)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Set (Set,empty,(\\),union,singleton)
+import Data.Set (Set,empty,(\\),union,singleton,notMember)
 import qualified Data.Set as Set
 
 main :: IO ()
@@ -67,7 +67,7 @@ discoverPlantBedContaining thisPlant g start = discover 0 (singleton start) empt
                 [ q
                 | p <- Set.toList frontier
                 , q <- adj p
-                , q `notElem` acc
+                , q `notMember` acc
                 , Just ty <- [Map.lookup q g]
                 , ty == thisPlant
                 ]

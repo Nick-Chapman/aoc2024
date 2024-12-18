@@ -2,8 +2,9 @@ module Day5 (main) where
 
 import Misc (check)
 import Par4 (parse,Par,int,lit,nl,terminated,separated)
-import Data.Set as Set
 import Data.List as List (sortBy)
+import Data.Set (Set,member,notMember)
+import qualified Data.Set as Set
 
 main :: IO ()
 main = do
@@ -40,7 +41,7 @@ part2 (cs,us) = sum [ middle (putInOrder cs u) | u <- us, not (u `satisfies` cs)
 
 putInOrder :: Constraints -> [Page] -> [Page]
 putInOrder cs ps = List.sortBy f ps
-  where f p q = if (p,q) `elem` cs then LT else GT
+  where f p q = if (p,q) `member` cs then LT else GT
 
 middle ::Update -> Page
 middle xs = do
@@ -49,7 +50,7 @@ middle xs = do
     xs !! (n `div` 2)
 
 satisfies :: Update -> Constraints -> Bool
-satisfies u cs = all (\o -> opposite o `notElem` cs) (ordersOf u)
+satisfies u cs = all (\o -> opposite o `notMember` cs) (ordersOf u)
 
 ordersOf :: Update -> [Order]
 ordersOf u = [ (x,y) | x:ys <- tails u, y <- ys ]
