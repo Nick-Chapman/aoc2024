@@ -12,7 +12,7 @@ main = do
   print ("day18, part1 (sample)", check 22 $ part1 12 (6,6) sam)
   print ("day18, part1", check 270 $ part1 1024 (70,70) inp)
   print ("day18, part2 (sample)", check (6,1) $ part2 (6,6) sam)
-  print ("day18, part2 (sample)", check (51,40) $ part2 (70,70) inp)
+  print ("day18, part2", check (51,40) $ part2 (70,70) inp)
 
 type Input = [Pos]
 type Pos = (Int,Int)
