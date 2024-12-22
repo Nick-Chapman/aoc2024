@@ -23,3 +23,4 @@
 [day19](src/Day19.hs) [day19(part1-shell)](day19.sh)
 
 [day21](src/Day21.hs)
+[day22](src/Day22.hs)
