@@ -1,6 +1,8 @@
 module Day21 (main) where
 
 import Misc (check)
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 main :: IO ()
 main = do
@@ -8,36 +10,47 @@ main = do
   inp <- lines <$> readFile "input/day21.input"
   print ("day21, part1 (sample)", check 126384 $ part1 sam)
   print ("day21, part1", check 171596 $ part1 inp)
+  print ("day21, part2", check 209268004868246 $ part2 inp)
+    where
+      part1 = go 2
+      part2 = go 25
 
-data K2 = U | A | L | D | R
+data K2 = U | A | L | D | R deriving (Eq,Ord,Show)
 
-part1 :: [String] -> Int
-part1 = sum . map complexity
+go :: Int -> [String] -> Int
+go k = sum . map (complexity k)
 
-complexity :: String -> Int
-complexity s = do
-  let ns = [ length xs | xs <- typings s ]
+complexity :: Int -> String -> Int
+complexity k s = do
   let i = read @Int (init s)
-  let j = minimum ns
-  (i*j)
+  let n = shortestTypings k s
+  (i*n)
 
-typings :: String -> [[K2]]
-typings s =
-  [ zs
-  | xs <- type1 'A' s
-  , ys <- type2 A xs
-  , zs <- type2 A ys
-  ]
+shortestTypings :: Int -> String -> Int
+shortestTypings kMax s = sum [ shortestMove1 kMax (c,d) | (c,d) <- zip ('A':s) s ]
+  where
+    shortestMove1 :: Int -> (Char,Char) -> Int
+    shortestMove1 k (c,d) = minimum [ lengthArrowTypings k xs | xs <- moveK1 c d ]
 
-type1 :: Char -> String -> [[K2]]
-type1 c = \case
-  [] -> [[]]
-  d:ds -> [ xs ++ [A] ++ ys | xs <- moveK1 c d , ys <- type1 d ds]
+    lengthArrowTypings :: Int -> [K2] -> Int
+    lengthArrowTypings k xs = case k of
+      0 -> length xs
+      _ -> sum [ shortestMove2' (k-1) (c,d) | (c,d) <- zip (A:xs) xs ]
 
-type2 :: K2 -> [K2] -> [[K2]]
-type2 c = \case
-  [] -> [[]]
-  d:ds -> [ xs ++ [A] ++ ys | xs <- moveK2 c d , ys <- type2 d ds]
+    shortestMove2' :: Int -> (K2,K2) -> Int
+    shortestMove2' k (c,d) = maybe err id $ Map.lookup (k,c,d) m
+      where err = error (show ("look",k,c,d))
+
+    m :: Map (Int,K2,K2) Int
+    m = Map.fromList
+      [ ((k,c,d), shortestMove2 k (c,d))
+      | k <- [0..kMax-1]
+      , c <- [U,A,L,D,R]
+      , d <- [U,A,L,D,R]
+      ]
+
+    shortestMove2 :: Int -> (K2,K2) -> Int
+    shortestMove2 k (c,d) = minimum [ lengthArrowTypings k xs | xs <- moveK2 c d ]
 
 moveK1 :: Char -> Char -> [[K2]]
 moveK1 c d = do
@@ -45,11 +58,10 @@ moveK1 c d = do
   let (dx,dy) = posK1 d
   let x = dx - cx
   let y = dy - cy
-  let vh = vert y ++ hori x
-  let hv = hori x ++ vert y
+  let vh = vert y ++ hori x ++ [A]
+  let hv = hori x ++ vert y ++ [A]
   if (cx==0 && dy==3) then [hv] else
-    if (cy==3 && dx==0) then [vh] else
-      [hv,vh]
+    if (cy==3 && dx==0) then [vh] else [hv,vh]
 
 moveK2 :: K2 -> K2 -> [[K2]]
 moveK2 c d = do
@@ -57,13 +69,10 @@ moveK2 c d = do
   let (dx,dy) = posK2 d
   let x = dx - cx
   let y = dy - cy
-  let vh = vert y ++ hori x
-  let hv = hori x ++ vert y
+  let vh = vert y ++ hori x ++ [A]
+  let hv = hori x ++ vert y ++ [A]
   if (cx==0 && dy==0) then [hv] else
-    if (cy==0 && dx==0) then [vh] else
-      [hv
-      -- ,vh
-      ]
+    if (cy==0 && dx==0) then [vh] else [hv,vh]
 
 hori :: Int -> [K2]
 hori n = if n == 0 then [] else if n < 0 then replicate (abs n) L else replicate n R
