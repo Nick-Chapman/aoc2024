@@ -27,7 +27,7 @@ import qualified Day16
 import qualified Day17
 import qualified Day18
 import qualified Day19
-
+import qualified Day20
 import qualified Day21
 import qualified Day22
 import qualified Day23
@@ -53,7 +53,7 @@ mains = zip [1..]
   , Day17.main
   , Day18.main
   , Day19.main
-  , pure ()
+  , Day20.main
   , Day21.main
   , Day22.main
   , Day23.main
