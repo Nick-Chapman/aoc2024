@@ -8,8 +8,13 @@ import Data.List (sort)
 import qualified Data.Char as Char
 import Data.Bits (xor)
 
+import qualified Bdd
+
 main :: IO ()
-main = do
+main = Bdd.main
+
+_main :: IO ()
+_main = do
   sam <- parse gram <$> readFile "input/day24.sample"
   inp <- parse gram <$> readFile "input/day24.input"
   print ("day24, part1 (sample)", check 2024 $ part1 sam)
