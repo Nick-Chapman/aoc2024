@@ -7,6 +7,7 @@ import Par4 (parse,Par,terminated,separated,nl,some,sat,lit,key,alts)
 import qualified Data.Map as Map
 import qualified Data.Char as Char
 import Text.Printf (printf)
+import Data.List (sort,intercalate)
 
 main :: IO ()
 main = do
@@ -17,6 +18,10 @@ main = do
   inp <- parse gram <$> readFile "input/day24.input"
   part1_inp <- part1 45 inp
   print ("day24, part1", check 42410633905894 $ part1_inp)
+
+  part2_inp <- part2 45 inp
+  print ("day24, part2", check "cqm,mps,vcv,vjv,vwp,z13,z19,z25" $ part2_inp)
+
 
 type Name = String
 data Driver = And Name Name | Or Name Name | Xor Name Name deriving Show
@@ -55,10 +60,63 @@ part1 :: Int -> Input -> IO Int
 part1 zmax Input{assignment,circuit} = do
   let env = assignmentEnv assignment
   run $ do
-    mf <- circuitFunction zmax circuit
-    let zfs = [ look "part1" (mkZname i) mf | i <- [0..zmax] ]
+    let znames = [ mkZname i | i <- [ 0.. zmax ] ]
+    zfs <- circuitFunction [] znames circuit
     bs <- sequence [ eval env zf | zf <- zfs ]
     pure (fromBs bs)
+
+
+part2 :: Int -> Input -> IO String
+part2 zmax _input@Input{circuit} = do
+  let znames = [ mkZname i | i <- [ 0.. zmax ] ]
+  run $ do
+    expected <- referenceAdditionCircuit zmax
+    --Print(expected)
+    let
+      wrong :: [(Name,Name)] -> M [Int]
+      wrong pairs = do
+        actual <- circuitFunction pairs znames circuit
+        pure [ i | (i,(a,e)) <- zip [0::Int .. ] (zip actual expected), a/=e ]
+
+    let
+      check pairs = do
+        is <- wrong pairs
+        let _n = length is
+        Print (_n,pairs,is)
+        return ()
+
+    -- TODO: reinstate/improve the searching code!
+    let p1 = ("z13","vcv")
+    let p2 = ("vwp","z19")
+    let p3 = ("mps","z25")
+    let p4 = ("cqm","vjv")
+
+    --check [p1,p2,p3]
+    check [p1,p2,p3,p4]
+
+    let res = intercalate "," $ sort [ n | (n1,n2) <- [p1,p2,p3,p4], n <- [n1,n2] ]
+    pure res
+
+
+referenceAdditionCircuit :: Int -> M [F]
+referenceAdditionCircuit zmax = do
+  let xs = [ x n | n <- [0..zmax-1] ]
+  let ys = [ y n | n <- [0..zmax-1] ]
+  a <- mapM var xs
+  b <- mapM var ys
+  add a b
+
+add :: [F] -> [F] -> M [F]
+add xs ys = loop zero (zip xs ys) where
+  loop :: F -> [(F,F)] -> M [F]
+  loop cin = \case
+    [] -> pure [cin] -- dont drop final carry out
+    (x,y):rest -> do
+      cout <- majority cin x y
+      z <- parity cin x y
+      zs <- loop cout rest
+      pure (z:zs)
+
 
 assignmentEnv :: Map Name Bool -> Env
 assignmentEnv ass = Map.fromList [ (varOfNameXY n, b) | (n,b) <- Map.toList ass ]
@@ -97,18 +155,27 @@ mkZname n = printf "z%02d" n
 
 type MF = Map Name F
 
-circuitFunction :: Int -> Map Name Driver -> M (Map Name F)
-circuitFunction zmax circuit = builds Map.empty [ mkZname i | i <- [ 0.. zmax ] ]
+type Rename = Name -> Name
+
+circuitFunction :: [(Name,Name)] -> [Name] -> Map Name Driver -> M [F]
+circuitFunction pairs znames circuit = builds Map.empty znames
   where
-    builds :: MF -> [Name] -> M MF
+    rename :: Rename
+    rename = do
+      let f acc (n0,n1) k = if k==n0 then n1 else if k==n1 then n0 else acc k
+      foldl f id pairs
+
+    builds :: MF -> [Name] -> M [F]
     builds mf = \case
-      [] -> pure mf
+      [] -> pure []
       x:xs -> do
-        (mf,_) <- build mf x
-        builds mf xs
+        (mf,y) <- build mf x
+        ys <- builds mf xs
+        pure (y:ys)
 
     build :: MF -> Name -> M (MF,F)
-    build mf name = do
+    build mf name0 = do
+      let name = rename name0
       case Map.lookup name mf of
         Just f -> do
           pure (mf,f)
@@ -119,6 +186,7 @@ circuitFunction zmax circuit = builds Map.empty [ mkZname i | i <- [ 0.. zmax ] 
               pure (mf,f)
             Nothing -> do
               (mf,f) <- do
+                --mf <- pure $ Map.insert name 0 mf -- break cycles; needed when originally searching
                 (case look "circuitFunction" name circuit of
                   And x y -> do
                     (mf,x) <- build mf x
@@ -137,17 +205,6 @@ circuitFunction zmax circuit = builds Map.empty [ mkZname i | i <- [ 0.. zmax ] 
                     pure (mf,f))
               let mf' = Map.insert name f mf
               pure (mf',f)
-
-_add :: [F] -> [F] -> M [F]
-_add xs ys = loop zero (zip xs ys) where
-  loop :: F -> [(F,F)] -> M [F]
-  loop cin = \case
-    [] -> pure [] -- drop final carry out
-    (x,y):rest -> do
-      cout <- majority cin x y
-      z <- parity cin x y
-      zs <- loop cout rest
-      pure (z:zs)
 
 majority :: F -> F -> F -> M F
 majority a b c = do
