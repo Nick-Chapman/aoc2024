@@ -8,6 +8,7 @@ import qualified Data.Map as Map
 import qualified Data.Char as Char
 import Text.Printf (printf)
 import Data.List (sort,intercalate)
+import System.IO (hFlush,stdout)
 
 main :: IO ()
 main = do
@@ -65,37 +66,87 @@ part1 zmax Input{assignment,circuit} = do
     bs <- sequence [ eval env zf | zf <- zfs ]
     pure (fromBs bs)
 
-
 part2 :: Int -> Input -> IO String
 part2 zmax _input@Input{circuit} = do
+
+  let all = Map.keys circuit
   let znames = [ mkZname i | i <- [ 0.. zmax ] ]
-  run $ do
+
+  let
+    nwrong expected pairs = do
+      actual <- circuitFunction pairs znames circuit
+      let is = [ i | (i,(a,e)) <- zip [0::Int .. ] (zip actual expected), a/=e ]
+      pure (length is)
+
+  let ignoreHints = False -- 124s if we ignore hints
+
+  let
+    stage lastN goalN ps hint = do
+      run $ do
+        let candidates = [ (a,b) | a <- all, b <- all, a < b, ignoreHints || hint a b ]
+        expected <- referenceAdditionCircuit zmax
+        let i = 1+zmax - lastN
+        let e = expected !! i
+        let
+          predSlow candPair = do
+            n <- nwrong expected (ps++[candPair])
+            pure (n <= goalN)
+        let
+          predQuick candPair = do
+            let pairs = ps++[candPair]
+            -- ORIG: a <- (!!i) <$> circuitFunction pairs znames circuit
+            -- Massive speedup (x7): only build and compare the least-significant wrong output
+            a <- head <$> circuitFunction pairs [mkZname i] circuit
+            pure (a == e)
+        let
+          pred x = do
+            predQuick x >>= \case
+              False -> pure False
+              True -> predSlow x
+
+        newPair <- search pred candidates
+        newN <- nwrong expected (ps++[newPair])
+        --Print(newN)
+        pure (newN,newPair)
+
+  n0 <- run $ do
     expected <- referenceAdditionCircuit zmax
-    --Print(expected)
-    let
-      wrong :: [(Name,Name)] -> M [Int]
-      wrong pairs = do
-        actual <- circuitFunction pairs znames circuit
-        pure [ i | (i,(a,e)) <- zip [0::Int .. ] (zip actual expected), a/=e ]
+    nwrong expected []
 
-    let
-      check pairs = do
-        is <- wrong pairs
-        let _n = length is
-        Print (_n,pairs,is)
-        return ()
+  let hint1 a b = head a == 'v' && head b == 'z'
+  (n1,p1) <- stage n0 (n0-1) [] hint1
+  --print (check p1 ("vcv","z13"))
+  let hint2 a b = head a == 'v' && head b == 'z'
+  (n2,p2) <- stage n1 (n1-1) [p1] hint2
+  --print (check p2 ("vwp","z19"))
+  let hint3 a b = head a == 'm' && head b == 'z'
+  (n3,p3) <- stage n2 (n2-1) [p1,p2] hint3
+  --print (check p3 ("mps","z25"))
+  let _hint4 a b = head a == 'c' && head b == 'v'
+  (_n4,p4) <- stage n3 0 [p1,p2,p3] _hint4
+  --print (check p4 ("cqm","vjv"))
+  --print (check _n4 0)
+  pure $ intercalate "," $ sort [ n | (n1,n2) <- [p1,p2,p3,p4], n <- [n1,n2] ]
 
-    -- TODO: reinstate/improve the searching code!
-    let p1 = ("z13","vcv")
-    let p2 = ("vwp","z19")
-    let p3 = ("mps","z25")
-    let p4 = ("cqm","vjv")
 
-    --check [p1,p2,p3]
-    check [p1,p2,p3,p4]
-
-    let res = intercalate "," $ sort [ n | (n1,n2) <- [p1,p2,p3,p4], n <- [n1,n2] ]
-    pure res
+search :: (a -> M Bool) -> [a] -> M a
+search pred cands =
+  do
+    Io (printf "#%d:" (length cands))
+    loop (zip [0::Int ..] cands)
+  where
+    flush = hFlush stdout
+    dot = Io $ do putStr "."; flush
+    loop = \case
+      [] -> error "search!"
+      (i,x):more -> do
+        pred x >>= \case
+          True -> do
+            dot; Io(putStrLn(show i))
+            pure x
+          False -> do
+            if i `mod` 100 /= 0 then pure () else do dot; Io(putStr(show i))
+            loop more
 
 
 referenceAdditionCircuit :: Int -> M [F]
@@ -186,7 +237,7 @@ circuitFunction pairs znames circuit = builds Map.empty znames
               pure (mf,f)
             Nothing -> do
               (mf,f) <- do
-                --mf <- pure $ Map.insert name 0 mf -- break cycles; needed when originally searching
+                mf <- pure $ Map.insert name 0 mf -- break cycles; needed when originally searching
                 (case look "circuitFunction" name circuit of
                   And x y -> do
                     (mf,x) <- build mf x
@@ -323,6 +374,7 @@ data M a where
   Construct :: (Var,F,F) -> M F
   Destruct :: F -> M (Form F)
   Print :: Show a => a -> M ()
+  Io :: IO a -> M a
 
 run :: M a -> IO a
 run m0 = loop m0 state0 (\_ -> pure)
@@ -352,7 +404,9 @@ run m0 = loop m0 state0 (\_ -> pure)
       Print x -> do
         let State{hit,u} = s
         printf "%d: #%d: %s\n" hit u (show x)
+        --print x
         k s ()
+      Io io -> do a <- io; k s a
 
 type F = Int
 type Trip = (Var,F,F)
