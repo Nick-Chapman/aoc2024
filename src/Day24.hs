@@ -81,16 +81,14 @@ part2 zmax _input@Input{circuit} = do
       let is = [ i | (i,(a,e)) <- zip [0::Int .. ] (zip actual expected), a/=e ]
       pure (length is)
 
-  let ignoreHints = True -- 22s if we ignore hints
-
   let
-    stage (_k::Int) lastN goalN lastPairs hint = do
+    stage (_k::Int) lastN goalN lastPairs = do
       run $ do
         expected <- referenceAdditionCircuit zmax
         let i = 1 + zmax - lastN
         let reach = reachFrom lastPairs [ mkZname i | i <- [0..i-1] ] circuit
         let candNames = Set.toList (Set.fromList all \\ reach)
-        let candidates = [ (a,b) | a <- candNames, b <- candNames, a < b, ignoreHints || hint a b ]
+        let candidates = [ (a,b) | a <- candNames, b <- candNames, a < b ]
         let e = expected !! i
         let
           predSlow candPair = do
@@ -119,20 +117,16 @@ part2 zmax _input@Input{circuit} = do
     expected <- referenceAdditionCircuit zmax
     nwrong expected []
 
-  let hint1 a b = head a == 'v' && head b == 'z'
-  (n1,p1) <- stage 1 n0 (n0-1) [] hint1
+  (n1,p1) <- stage 1 n0 (n0-1) []
   --print (check p1 ("vcv","z13"))
 
-  let hint2 a b = head a == 'v' && head b == 'z'
-  (n2,p2) <- stage 2 n1 (n1-1) [p1] hint2
+  (n2,p2) <- stage 2 n1 (n1-1) [p1]
   --print (check p2 ("vwp","z19"))
 
-  let hint3 a b = head a == 'm' && head b == 'z'
-  (n3,p3) <- stage 3 n2 (n2-1) [p1,p2] hint3
+  (n3,p3) <- stage 3 n2 (n2-1) [p1,p2]
   --print (check p3 ("mps","z25"))
 
-  let _hint4 a b = head a == 'c' && head b == 'v'
-  (_n4,p4) <- stage 4 n3 0 [p1,p2,p3] _hint4
+  (_n4,p4) <- stage 4 n3 0 [p1,p2,p3]
   --print (check p4 ("cqm","vjv"))
   --print (check _n4 0)
 
@@ -143,7 +137,7 @@ search :: (a -> M Bool) -> [a] -> M a
 search pred cands =
   do
     Io (printf "#%d:" (length cands))
-    loop (zip [0::Int ..] cands)
+    loop (zip [0::Int ..] cands) -- reverse cands 22s-->12s !
   where
     flush = hFlush stdout
     dot = Io $ do putStr "."; flush
