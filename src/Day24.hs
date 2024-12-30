@@ -10,6 +10,9 @@ import Text.Printf (printf)
 import Data.List (sort,intercalate)
 import System.IO (hFlush,stdout)
 
+import Data.Set (Set,(\\))
+import qualified Data.Set as Set
+
 main :: IO ()
 main = do
   sam <- parse gram <$> readFile "input/day24.sample"
@@ -78,22 +81,25 @@ part2 zmax _input@Input{circuit} = do
       let is = [ i | (i,(a,e)) <- zip [0::Int .. ] (zip actual expected), a/=e ]
       pure (length is)
 
-  let ignoreHints = False -- 124s if we ignore hints
+  let ignoreHints = True -- 22s if we ignore hints
 
   let
-    stage lastN goalN ps hint = do
+    stage (_k::Int) lastN goalN lastPairs hint = do
       run $ do
-        let candidates = [ (a,b) | a <- all, b <- all, a < b, ignoreHints || hint a b ]
         expected <- referenceAdditionCircuit zmax
-        let i = 1+zmax - lastN
+        let i = 1 + zmax - lastN
+        let reach = reachFrom lastPairs [ mkZname i | i <- [0..i-1] ] circuit
+        let candNames = Set.toList (Set.fromList all \\ reach)
+        let candidates = [ (a,b) | a <- candNames, b <- candNames, a < b, ignoreHints || hint a b ]
         let e = expected !! i
         let
           predSlow candPair = do
-            n <- nwrong expected (ps++[candPair])
+            --Io(putStr"(slow)")
+            n <- nwrong expected (lastPairs++[candPair])
             pure (n <= goalN)
         let
           predQuick candPair = do
-            let pairs = ps++[candPair]
+            let pairs = lastPairs++[candPair]
             -- ORIG: a <- (!!i) <$> circuitFunction pairs znames circuit
             -- Massive speedup (x7): only build and compare the least-significant wrong output
             a <- head <$> circuitFunction pairs [mkZname i] circuit
@@ -105,7 +111,7 @@ part2 zmax _input@Input{circuit} = do
               True -> predSlow x
 
         newPair <- search pred candidates
-        newN <- nwrong expected (ps++[newPair])
+        newN <- nwrong expected (lastPairs++[newPair])
         --Print(newN)
         pure (newN,newPair)
 
@@ -114,18 +120,22 @@ part2 zmax _input@Input{circuit} = do
     nwrong expected []
 
   let hint1 a b = head a == 'v' && head b == 'z'
-  (n1,p1) <- stage n0 (n0-1) [] hint1
+  (n1,p1) <- stage 1 n0 (n0-1) [] hint1
   --print (check p1 ("vcv","z13"))
+
   let hint2 a b = head a == 'v' && head b == 'z'
-  (n2,p2) <- stage n1 (n1-1) [p1] hint2
+  (n2,p2) <- stage 2 n1 (n1-1) [p1] hint2
   --print (check p2 ("vwp","z19"))
+
   let hint3 a b = head a == 'm' && head b == 'z'
-  (n3,p3) <- stage n2 (n2-1) [p1,p2] hint3
+  (n3,p3) <- stage 3 n2 (n2-1) [p1,p2] hint3
   --print (check p3 ("mps","z25"))
+
   let _hint4 a b = head a == 'c' && head b == 'v'
-  (_n4,p4) <- stage n3 0 [p1,p2,p3] _hint4
+  (_n4,p4) <- stage 4 n3 0 [p1,p2,p3] _hint4
   --print (check p4 ("cqm","vjv"))
   --print (check _n4 0)
+
   pure $ intercalate "," $ sort [ n | (n1,n2) <- [p1,p2,p3,p4], n <- [n1,n2] ]
 
 
@@ -142,10 +152,10 @@ search pred cands =
       (i,x):more -> do
         pred x >>= \case
           True -> do
-            dot; Io(putStrLn(show i))
+            Io(putStrLn(show i))
             pure x
           False -> do
-            if i `mod` 100 /= 0 then pure () else do dot; Io(putStr(show i))
+            if i `mod` 1000 /= 0 then pure () else do Io(putStr(show i)); dot
             loop more
 
 
@@ -208,8 +218,36 @@ type MF = Map Name F
 
 type Rename = Name -> Name
 
+
+reachFrom :: [(Name,Name)] -> [Name] -> Map Name Driver -> Set Name
+reachFrom pairs outputs circuit = collect Set.empty outputs
+  where
+    rename :: Rename
+    rename = do
+      let f acc (n0,n1) k = if k==n0 then n1 else if k==n1 then n0 else acc k
+      foldl f id pairs
+
+    collect :: Set Name -> [Name] -> Set Name
+    collect acc = \case
+      [] -> acc
+      x:xs -> collect (collect1 acc x) xs
+
+    collect1 :: Set Name -> Name -> Set Name
+    collect1 acc0 name0 = do
+      let name = rename name0
+      if name `Set.member` acc0 then acc0 else do
+        let acc = Set.insert name acc0
+        case maybeVarName name of
+          Just{} -> acc
+          Nothing ->
+            case look "reachFrom" name circuit of
+              And x y -> collect1 (collect1 acc x) y
+              Or x y -> collect1 (collect1 acc x) y
+              Xor x y -> collect1 (collect1 acc x) y
+
+
 circuitFunction :: [(Name,Name)] -> [Name] -> Map Name Driver -> M [F]
-circuitFunction pairs znames circuit = builds Map.empty znames
+circuitFunction pairs outputs circuit = builds Map.empty outputs
   where
     rename :: Rename
     rename = do
@@ -237,7 +275,7 @@ circuitFunction pairs znames circuit = builds Map.empty znames
               pure (mf,f)
             Nothing -> do
               (mf,f) <- do
-                mf <- pure $ Map.insert name 0 mf -- break cycles; needed when originally searching
+                mf <- pure $ Map.insert name 0 mf -- break cycles which might be introduced by swapping
                 (case look "circuitFunction" name circuit of
                   And x y -> do
                     (mf,x) <- build mf x
@@ -402,9 +440,9 @@ run m0 = loop m0 state0 (\_ -> pure)
             let (i,t,e) = maybe err id $ Map.lookup n down
             k s (Ite i t e)
       Print x -> do
-        let State{hit,u} = s
-        printf "%d: #%d: %s\n" hit u (show x)
-        --print x
+        --let State{hit,u} = s
+        --printf "%d: #%d: %s\n" hit u (show x)
+        print x
         k s ()
       Io io -> do a <- io; k s a
 
