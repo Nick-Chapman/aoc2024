@@ -118,17 +118,9 @@ part2 zmax _input@Input{circuit} = do
     nwrong expected []
 
   (n1,p1) <- stage 1 n0 (n0-1) []
-  --print (check p1 ("vcv","z13"))
-
   (n2,p2) <- stage 2 n1 (n1-1) [p1]
-  --print (check p2 ("vwp","z19"))
-
   (n3,p3) <- stage 3 n2 (n2-1) [p1,p2]
-  --print (check p3 ("mps","z25"))
-
-  (_n4,p4) <- stage 4 n3 0 [p1,p2,p3]
-  --print (check p4 ("cqm","vjv"))
-  --print (check _n4 0)
+  (_ ,p4) <- stage 4 n3 0      [p1,p2,p3]
 
   pure $ intercalate "," $ sort [ n | (n1,n2) <- [p1,p2,p3,p4], n <- [n1,n2] ]
 
@@ -302,19 +294,22 @@ parity a b c = do
   ab <- xor a b
   xor ab c
 
-xor :: F -> F -> M F
-xor x y = do
-  x' <- inv x
-  y' <- inv y
-  a <- conj x y'
-  b <- conj y x'
-  disj a b
+
+conj :: F -> F -> M F
+conj = binary unary0 unary1 where
+  unary0 _ = pure zero
+  unary1 x = pure x
 
 disj :: F -> F -> M F
-disj x y = do
-  x' <- inv x
-  y' <- inv y
-  conj x' y' >>= inv
+disj = binary unary0 unary1 where
+  unary0 x = pure x
+  unary1 _ = pure one
+
+xor :: F -> F -> M F
+xor = binary unary0 unary1 where
+  unary0 x = pure x
+  unary1 x = inv x
+
 
 type Memo = Map F F
 
@@ -338,10 +333,11 @@ inv a = do (_,res) <- loop Map.empty a; pure res
           let memo' = Map.insert f res memo
           pure (memo',res)
 
+
 type Memo2 = Map (F,F) F
 
-conj :: F -> F -> M F
-conj p q = do (_,res) <- loop Map.empty p q; pure res
+binary :: (F -> M F) -> (F -> M F) -> F -> F -> M F
+binary unary0 unary1 p q = do (_,res) <- loop Map.empty p q; pure res
   where
     loop :: Memo2 -> F -> F -> M (Memo2, F)
     loop memo f1 f2 =
@@ -356,10 +352,10 @@ conj p q = do (_,res) <- loop Map.empty p q; pure res
 
     compute :: Memo2 -> F -> F -> (Form F,Form F) -> M (Memo2, F)
     compute memo f1 f2 = \case
-      (Zero,_) -> pure (memo,zero)
-      (_,Zero) -> pure (memo,zero)
-      (One,_) -> pure (memo,f2)
-      (_,One) -> pure (memo,f1)
+      (Zero,_) -> do res <- unary0 f2; pure (memo,res)
+      (_,Zero) -> do res <- unary0 f1; pure (memo,res)
+      (One,_) -> do res <- unary1 f2; pure (memo,res)
+      (_,One) -> do res <- unary1 f1; pure (memo,res)
       (Ite v1 t1 e1, Ite v2 t2 e2) ->
         if v1 == v2 then do
           (memo,t) <- loop memo t1 t2
@@ -376,6 +372,7 @@ conj p q = do (_,res) <- loop Map.empty p q; pure res
           (memo,e) <- loop memo e2 f1
           res <- ite v2 t e
           pure (memo,res)
+
 
 data Prefix = X | Y deriving (Eq,Ord,Show)
 type Var = (Int,Prefix) -- so we intereave X/Y for sorting!
