@@ -9,8 +9,12 @@ main :: IO ()
 main = do
   sam <- parse gram <$> readFile "input/day20.sample"
   inp <- parse gram <$> readFile "input/day20.input"
-  print ("day20, part1 (sample)", check 44 $ part1 0 sam)
+  print ("day20, part1 (sample)", check 44 $ part1 2 sam)
   print ("day20, part1", check 1415 $ part1 100 inp)
+  --print ("day20, part1 (sample)", check 44 $ part1or2 2 2 sam)
+  --print ("day20, part1", check 1415 $ part1or2 2 100 inp)
+  print ("day20, part2 (sample)", check 285 $ part1or2 20 50 sam)
+  print ("day20, part2", check 1022577 $ part1or2 20 100 inp)
 
 type Input = Map Pos Tile
 type Pos = (Int,Int)
@@ -40,6 +44,22 @@ part1 min inp = do
     , score <- case Map.lookup p2 r of Nothing -> []; Just j -> if j > i+3 then [j-i-2] else []
     , score >= min
     ]
+
+part1or2 :: Int -> Int -> Input -> Int
+part1or2 cheatSteps min inp = do
+  let r :: Map Pos Int = Map.fromList (zip (findBest inp) [0..])
+  length
+    [ score
+    | (p,i) <- Map.toList r
+    , (q,j) <- Map.toList r
+    , let n = diff p q
+    , n <= cheatSteps
+    , let score = j - i - n
+    , score >= min
+    ]
+
+diff :: Pos -> Pos -> Int
+diff (x1,y1) (x2,y2) = abs (x1-x2) + abs (y1-y2)
 
 findBest :: Input -> [Pos]
 findBest inp = do
