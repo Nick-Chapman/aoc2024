@@ -26,3 +26,4 @@
 [day22](src/Day22.hs)
 [day23](src/Day23.hs)
 [day24](src/Day24.hs)
+[day25](src/Day25.hs)
