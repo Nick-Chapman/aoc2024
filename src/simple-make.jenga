@@ -1,0 +1,101 @@
+
+# Link the executable
+
+aoc.exe : ghc.exe main.o Par4.o Misc.o Advent2024.o Day1.o Day2.o Day3.o Day4.o Day5.o Day6.o Day7.o Day8.o Day9.o Day10.o Day11.o Day12.o Day13.o Day14.o Day15.o Day16.o Day17.o Day18.o Day19.o Day20.o Day21.o Day22.o Day23.o Day24.o Day25.o Day17_part2.o
+ ./ghc.exe -o aoc.exe -package containers main.o Par4.o Misc.o Advent2024.o Day1.o Day2.o Day3.o Day4.o Day5.o Day6.o Day7.o Day8.o Day9.o Day10.o Day11.o Day12.o Day13.o Day14.o Day15.o Day16.o Day17.o Day18.o Day19.o Day20.o Day21.o Day22.o Day23.o Day24.o Day25.o Day17_part2.o
+
+
+# Generate and Compile a main
+
+main.hs :
+  echo 'import Advent2024' > main.hs
+
+main.o : ghc.exe main.hs Advent2024.hi #Day1.hi Day2.hi Day3.hi
+  ./ghc.exe -c main.hs
+
+Advent2024.hi Advent2024.o : ghc.exe Advent2024.hs Day1.hi Day2.hi Day3.hi Day4.hi Day5.hi Day6.hi Day7.hi Day8.hi Day9.hi Day10.hi Day11.hi Day12.hi Day13.hi Day14.hi Day15.hi Day16.hi Day17.hi Day18.hi Day19.hi Day20.hi Day21.hi Day22.hi Day23.hi Day24.hi Day25.hi
+  ./ghc.exe -c Advent2024.hs #-package clock
+
+
+Day1.hi Day1.o : ghc.exe Day1.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day1.hs
+Day2.hi Day2.o : ghc.exe Day2.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day2.hs
+Day3.hi Day3.o : ghc.exe Day3.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day3.hs
+Day4.hi Day4.o : ghc.exe Day4.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day4.hs
+Day5.hi Day5.o : ghc.exe Day5.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day5.hs
+Day6.hi Day6.o : ghc.exe Day6.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day6.hs
+Day7.hi Day7.o : ghc.exe Day7.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day7.hs
+Day8.hi Day8.o : ghc.exe Day8.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day8.hs
+Day9.hi Day9.o : ghc.exe Day9.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day9.hs
+Day10.hi Day10.o : ghc.exe Day10.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day10.hs
+Day11.hi Day11.o : ghc.exe Day11.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day11.hs
+Day12.hi Day12.o : ghc.exe Day12.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day12.hs
+Day13.hi Day13.o : ghc.exe Day13.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day13.hs
+Day14.hi Day14.o : ghc.exe Day14.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day14.hs
+Day15.hi Day15.o : ghc.exe Day15.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day15.hs
+Day16.hi Day16.o : ghc.exe Day16.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day16.hs
+Day18.hi Day18.o : ghc.exe Day18.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day18.hs
+Day19.hi Day19.o : ghc.exe Day19.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day19.hs
+Day20.hi Day20.o : ghc.exe Day20.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day20.hs
+Day21.hi Day21.o : ghc.exe Day21.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day21.hs
+Day22.hi Day22.o : ghc.exe Day22.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day22.hs
+Day23.hi Day23.o : ghc.exe Day23.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day23.hs
+Day24.hi Day24.o : ghc.exe Day24.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day24.hs
+Day25.hi Day25.o : ghc.exe Day25.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day25.hs
+
+Day17.hi Day17.o : ghc.exe Day17.hs Misc.hi Par4.hi Day17_part2.hi
+  ./ghc.exe -c Day17.hs
+
+Day17_part2.hi Day17_part2.o : ghc.exe Day17_part2.hs Misc.hi Par4.hi
+  ./ghc.exe -c Day17_part2.hs
+
+Misc.hi Misc.o : ghc.exe Misc.hs
+ ./ghc.exe -c Misc.hs
+
+Par4.hi Par4.o : ghc.exe Par4.hs
+ ./ghc.exe -c Par4.hs
+
+
+# Choose a ghc binary and create a dispatcher script
+
+versions :
+  find $HOME/.stack | grep lib/.*/bin/ghc$ | rev | cut -d/ -f3 | rev | cut -d- -f2 | sort -n > versions
+
+latest-version : versions
+  tail -1 versions > latest-version
+
+selected-version : latest-version
+  cp latest-version selected-version
+#echo 9.8.4 > selected-version #this is the latest version
+
+ghc-path : selected-version
+  find $HOME/.stack | grep -v lib | grep bin/ghc$ | grep $(cat selected-version) > ghc-path
+
+ghc.exe : ghc-path ghc-opts
+  echo exec $(cat ghc-path) $(cat ghc-opts) '"$@"' > ghc.exe; chmod +x ghc.exe
+
+ghc-opts :
+  echo '-XDuplicateRecordFields -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XNamedFieldPuns -XNumericUnderscores -XScopedTypeVariables -XTypeApplications -Werror -Wall -Wno-name-shadowing -dppr-debug' > ghc-opts
