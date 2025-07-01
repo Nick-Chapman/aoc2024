@@ -1,8 +1,9 @@
 module Day22 (main) where
 
 import Data.Bits (xor)
-import Misc (check,collate)
 import Data.Map (Map)
+import Misc (check,collate,head,tail)
+import Prelude hiding (head,tail)
 import qualified Data.Map as Map
 
 main :: IO ()

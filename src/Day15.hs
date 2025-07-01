@@ -1,8 +1,9 @@
 module Day15 (main) where
 
 import Data.Map as Map
-import Misc (check,the)
+import Misc (check,the,head)
 import Par4 (parse,Par,separated,terminated,many,some,nl,lit,alts)
+import Prelude hiding (head)
 
 main :: IO ()
 main = do

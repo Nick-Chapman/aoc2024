@@ -1,6 +1,7 @@
 module Day4 (main) where
 
-import Misc (check)
+import Misc (check,head,tail)
+import Prelude hiding (head,tail)
 
 main :: IO ()
 main = do

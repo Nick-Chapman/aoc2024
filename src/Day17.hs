@@ -1,9 +1,10 @@
 module Day17 (main) where
 
-import Misc (check)
-import Par4 (parse,Par,key,int,separated,nl,lit)
 import Control.Monad (ap,liftM)
 import Data.Bits (xor)
+import Misc (check,head)
+import Par4 (parse,Par,key,int,separated,nl,lit)
+import Prelude hiding (head)
 import qualified Day17_part2
 
 main :: IO ()

@@ -1,8 +1,9 @@
 module Day25 (main) where
 
 import Data.List (transpose)
-import Misc (check)
+import Misc (check,head,tail)
 import Par4 (parse,Par,terminated,separated,nl,some,alts,lit)
+import Prelude hiding (head,tail)
 
 main :: IO ()
 main = do

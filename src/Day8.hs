@@ -1,8 +1,9 @@
 module Day8 (main) where
 
-import Misc (check,nub,collate)
-import qualified Data.Map as Map
 import Data.Map (Map)
+import Misc (check,nub,collate,head)
+import Prelude hiding (head)
+import qualified Data.Map as Map
 
 main :: IO ()
 main = do

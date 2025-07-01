@@ -1,8 +1,9 @@
 module Misc
-  ( check,collate,look,splitOn,the,hist,nub
+  ( check,collate,look,splitOn,the,hist,nub,head,tail
   ) where
 
 import Data.Map (Map)
+import Prelude hiding (head,tail)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -33,3 +34,9 @@ hist = Map.fromListWith (+) . map (\k -> (k,1))
 
 nub :: Ord a => [a] -> [a]
 nub = Set.toList . Set.fromList
+
+head :: [a] -> a
+head = \case [] -> error "head"; x:_ -> x
+
+tail :: [a] -> [a]
+tail = \case [] -> error "tail"; _:xs -> xs

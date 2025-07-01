@@ -4,8 +4,9 @@ import Data.List (maximumBy,sort,intercalate)
 import Data.Map (Map)
 import Data.Ord (comparing)
 import Data.Set ((\\))
-import Misc (check,collate,nub)
+import Misc (check,collate,nub,head)
 import Par4 (parse,Par,separated,nl,word,lit)
+import Prelude hiding (head)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

@@ -1,12 +1,13 @@
 module Day17_part2 (main) where
 
-import Misc (check)
-import Par4 (parse,Par,key,int,separated,nl,lit)
 import Control.Monad (ap,liftM)
 import Data.Bits (xor,shiftR)
+import Data.Map (Map)
+import Misc (check,head,tail)
+import Par4 (parse,Par,key,int,separated,nl,lit)
+import Prelude hiding (head,tail)
 import Text.Printf (printf)
 import qualified Data.Map as Map
-import Data.Map (Map)
 
 main :: IO ()
 main = do

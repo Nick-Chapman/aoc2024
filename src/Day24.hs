@@ -1,14 +1,15 @@
 module Day24 (main) where
 
 import Control.Monad (ap,liftM)
-import Data.Map (Map)
-import Misc (check)
-import Par4 (parse,Par,terminated,separated,nl,some,sat,lit,key,alts)
-import qualified Data.Map as Map
-import qualified Data.Char as Char
-import Text.Printf (printf)
 import Data.List (sort,intercalate)
+import Data.Map (Map)
+import Misc (check,head)
+import Par4 (parse,Par,terminated,separated,nl,some,sat,lit,key,alts)
+import Prelude hiding (head)
 import System.IO (hFlush,stdout)
+import Text.Printf (printf)
+import qualified Data.Char as Char
+import qualified Data.Map as Map
 
 import Data.Set (Set,(\\))
 import qualified Data.Set as Set

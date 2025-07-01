@@ -1,7 +1,8 @@
 module Day6 (main) where
 
 import Data.Set (Set,member,notMember)
-import Misc (check,the,nub)
+import Misc (check,the,nub,head)
+import Prelude hiding (head)
 import qualified Data.Set as Set
 
 main :: IO ()
