@@ -95,7 +95,7 @@ ghc-path : selected-version
   find $HOME/.stack | grep -v lib | grep bin/ghc$ | grep $(cat selected-version) > ghc-path
 
 ghc.exe : ghc-path ghc-opts
-  echo exec $(cat ghc-path) $(cat ghc-opts) '"$@"' > ghc.exe; chmod +x ghc.exe
+  echo sleep 0.3 > ghc.exe; echo exec $(cat ghc-path) $(cat ghc-opts) '"$@"' >> ghc.exe; chmod +x ghc.exe
 
 ghc-opts :
   echo '-XDuplicateRecordFields -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XNamedFieldPuns -XNumericUnderscores -XScopedTypeVariables -XTypeApplications -Werror -Wall -Wno-name-shadowing -dppr-debug' > ghc-opts
